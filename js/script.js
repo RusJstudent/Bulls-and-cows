@@ -19,8 +19,9 @@ input.addEventListener('keydown', function(e) {
 
 // const numOfDigits = askNumOfDigits();
 const numOfDigits = 4; // для отладки
-const randomDigits = getRandomDigits(numOfDigits);
-console.log(randomDigits); // подсказка для отладки
+const randomDigitsArr = getRandomDigits(numOfDigits);
+console.log(randomDigitsArr); // подсказка для отладки
+const solvedDigits = Array(randomDigitsArr.length);
 
 let highScore = localStorage.getItem('highScore') || 0;
 let currentScore = numOfDigits * 1000;
@@ -44,39 +45,57 @@ function askNumOfDigits() {
 }
 
 function getRandomDigits(num) {
-    const digits = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-    const randomDigits = [];
+    const result = [];
 
-    for (let i = 0; i < num; i++) {
-        const randomDigitIdx = Math.floor(Math.random() * digits.length);
-        const randomNum = digits.splice(randomDigitIdx, 1)[0];
-        randomDigits.push(randomNum);
+    for (let i = 0; i < 10; i++) {
+        const digits = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+        const randomDigits = [];
+    
+        for (let i = 0; i < num; i++) {
+            const randomDigitIdx = Math.floor(Math.random() * digits.length);
+            const randomNum = digits.splice(randomDigitIdx, 1)[0];
+            randomDigits.push(randomNum);
+        }
+
+        result.push(randomDigits);
     }
 
-    return randomDigits;
+    return result;
 }
 
-function guessHandler(value) { // менять
+function guessHandler(value) {
     if (!validateGuess(value)) return;
     history.push(value);
+    insertDefaultHTML();
 
-    let initialStr = randomDigits.join('');
-    let bullsNum = 0; // быки (полное совпадение)
-    let cowsNum = 0; // коровы (цифра есть, но не на своем месте)
+    let gameIsCompleted = true;
 
-    for (let i = 0; i < value.length; i++) {
-        const char = value[i];
-        if (initialStr[i] === char) {
-            bullsNum++;
-        } else if (initialStr.includes(char)) {
-            cowsNum++;
+    for (let i = 0; i < randomDigitsArr.length; i++) {
+        if (solvedDigits[i] === 1) {
+            insertResult('');
+            continue;
         }
+
+        let initialStr = randomDigitsArr[i].join('');
+        let bullsNum = 0; // быки (полное совпадение)
+        let cowsNum = 0; // коровы (цифра есть, но не на своем месте)
+    
+        for (let i = 0; i < value.length; i++) {
+            const char = value[i];
+            if (initialStr[i] === char) {
+                bullsNum++;
+            } else if (initialStr.includes(char)) {
+                cowsNum++;
+            }
+        }
+    
+        insertResult(`${bullsNum}:${cowsNum}`);
+
+        initialStr === value ? solvedDigits[i] = 1 : gameIsCompleted = false;
     }
 
-    insertResult(`${bullsNum}:${cowsNum}`);
-
     setTimeout(() => {
-        initialStr === value ? winHandler() : updateScore();
+        gameIsCompleted ? winHandler() : updateScore();
     });
 }
 
@@ -113,13 +132,20 @@ function validateGuess(value) {
     return true;
 }
 
-function insertResult(value) {
-    const log = `
+function insertDefaultHTML() {
+    const html = `
         <div class="log__num">${logElem.children.length / 12}</div>
         <div class="log__value">${history[history.length - 1]}</div>
+    `;
+
+    logElem.insertAdjacentHTML('beforeend', html);
+}
+
+function insertResult(value) {
+    const html = `
         <div class="log__result">${value}</div>
     `;
-    logElem.insertAdjacentHTML('beforeend', log);
+    logElem.insertAdjacentHTML('beforeend', html);
 }
 
 function winHandler() {
@@ -141,4 +167,28 @@ function updateScore() {
 
     if (currentScore <= 10) currentScore = 10;
     currentScoreElem.textContent = currentScore;
+}
+
+function solve(ms = 500) {
+    // Функция для удобства разработки, вызывать только когда ничего не отгадано
+
+    let range = {
+        from: 0,
+        to: randomDigitsArr.length - 1,
+      
+        async *[Symbol.asyncIterator]() {
+            for(let value = this.from; value <= this.to; value++) {
+                await new Promise(resolve => setTimeout(resolve, ms));
+                yield value;
+            }
+        }
+    };
+      
+    (async () => {
+        for await (let idx of range) {
+            const str = randomDigitsArr[idx].join('');
+            input.value = str;
+            button.click();
+        }
+    })();
 }

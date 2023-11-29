@@ -53,8 +53,7 @@ body {
 }
 .log {
     display: grid;
-    /* grid-template-columns: repeat(12, 1fr); */
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(12, 1fr);
     align-items: center;
     justify-items: center;
     gap: 12px;
@@ -62,3 +61,6 @@ body {
 .log > * {
     font-size: 20px;
 }
+.log__num {}
+.log__value {}
+.log__result {}
