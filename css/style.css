@@ -8,8 +8,16 @@ body {
     min-height: 100vh;
     min-height: 100dvh;
     display: flex;
-    justify-content: center;
     align-items: center;
+    overflow: hidden;
+}
+.container {
+    flex: 1 0 100%;
+    text-align: center;
+    transition: 0.3s;
+}
+.container.shift {
+    margin: 0px 0px 0px -100vw;
 }
 .game {
     background-color: rgba(121, 149, 106, 0.5);
@@ -17,23 +25,23 @@ body {
     border-radius: 2px;
     max-height: 70vh;
     overflow: auto;
-    display: flex;
+    display: inline-flex;
     justify-content: center;
     align-items: center;
     flex-direction: column;
 }
 
-/* Score */
-.score {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    column-gap: 20px;
-    font-size: 20px;
-    margin: 0px 0px 20px 0px;
+.game_1 {
+    background-color: rgb(189, 45, 45);
 }
-.score__high {}
-.score__current {}
+.game_2 {
+    background-color: rgb(50, 50, 104);
+}
+
+.game__player {
+    font-size: 24px;
+    margin: 0px 0px 15px 0px;
+}
 
 /* Inputs */
 .game__inputs {

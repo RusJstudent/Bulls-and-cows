@@ -1,10 +1,14 @@
 'use strict';
 
+const DELAY_AFTER_INPUT = 1500; // Задержка перед тем, как окно переключится на другого игрока
+
+const container = document.querySelector('.container');
 const input = document.querySelector('.game__input');
+const input2 = document.querySelectorAll('.game__input')[1];
 const button = document.querySelector('.game__button');
+const button2 = document.querySelectorAll('.game__button')[1];
 const logElem = document.querySelector('.log');
-const highScoreElem = document.getElementById('score__high-num');
-const currentScoreElem = document.getElementById('score__current-num');
+const logElem2 = document.querySelectorAll('.log')[1];
 
 button.addEventListener('click', function(e) {
     guessHandler(input.value);
@@ -17,17 +21,26 @@ input.addEventListener('keydown', function(e) {
     this.value = '';
 });
 
-// const numOfDigits = askNumOfDigits();
-const numOfDigits = 4; // для отладки
-const randomDigitsArr = getRandomDigits(numOfDigits);
-console.log(randomDigitsArr); // подсказка для отладки
-const solvedDigits = Array(randomDigitsArr.length);
+button2.addEventListener('click', function(e) {
+    guessHandler(input2.value);
+    input2.value = '';
+});
+input2.addEventListener('keydown', function(e) {
+    if (e.code !== 'Enter') return;
 
-let highScore = localStorage.getItem('highScore') || 0;
-let currentScore = numOfDigits * 1000;
-showScore();
+    guessHandler(this.value);
+    this.value = '';
+});
+
+const numOfDigits = askNumOfDigits();
+const randomDigitsArr = getRandomDigits(numOfDigits);
+const solvedDigits = Array(randomDigitsArr.length);
+const solvedDigits2 = Array(randomDigitsArr.length);
+
+let isPlayer1Turn = true;
 
 const history = [];
+const history2 = [];
 
 function askNumOfDigits() {
     let numOfDigits;
@@ -65,15 +78,35 @@ function getRandomDigits(num) {
 
 function guessHandler(value) {
     if (!validateGuess(value)) return;
-    history.push(value);
+
+    if (isPlayer1Turn) {
+        history.push(value);
+    } else {
+        history2.push(value);
+    }
     insertDefaultHTML();
 
     let gameIsCompleted = true;
 
     for (let i = 0; i < randomDigitsArr.length; i++) {
-        if (solvedDigits[i] === 1) {
-            insertResult('');
-            continue;
+        if (isPlayer1Turn) {
+            if (solvedDigits[i] === 1) {
+                insertResult('Вы угадали');
+                solvedDigits[i]++;
+                continue;
+            } else if (solvedDigits[i] === 2) {
+                insertResult('');
+                continue;
+            }
+        } else {
+            if (solvedDigits2[i] === 1) {
+                insertResult('Вы угадали');
+                solvedDigits2[i]++;
+                continue;
+            } else if (solvedDigits2[i] === 2) {
+                insertResult('');
+                continue;
+            }
         }
 
         let initialStr = randomDigitsArr[i].join('');
@@ -91,11 +124,28 @@ function guessHandler(value) {
     
         insertResult(`${bullsNum}:${cowsNum}`);
 
-        initialStr === value ? solvedDigits[i] = 1 : gameIsCompleted = false;
+        if (initialStr !== value) {
+            gameIsCompleted = false;
+            continue;
+        }
+
+        isPlayer1Turn ? solvedDigits[i] = 1 : solvedDigits2[i] = 1;
     }
 
+    input.disabled = true;
+    input2.disabled = true;
     setTimeout(() => {
-        gameIsCompleted ? winHandler() : updateScore();
+        input.disabled = false;
+        input2.disabled = false;
+    }, DELAY_AFTER_INPUT + 300);
+
+    setTimeout(() => {
+        isPlayer1Turn = !isPlayer1Turn;
+        container.classList.toggle('shift');
+    }, DELAY_AFTER_INPUT);
+
+    setTimeout(() => {
+        if (gameIsCompleted) winHandler();
     });
 }
 
@@ -124,53 +174,63 @@ function validateGuess(value) {
         return;
     }
 
-    if (history.includes(value)) {
-        alert(`Число ${value} уже введено ранее`);
-        return;
+    if (isPlayer1Turn) {
+        if (history.includes(value)) {
+            alert(`Число ${value} уже введено ранее`);
+            return;
+        }
+    } else {
+        if (history2.includes(value)) {
+            alert(`Число ${value} уже введено ранее`);
+            return;
+        }
     }
     
     return true;
 }
 
 function insertDefaultHTML() {
+    let index = logElem.children.length / 12;
+    if (!isPlayer1Turn) index = logElem2.children.length / 12;
+
+    let number = history[history.length - 1];
+    if (!isPlayer1Turn) number = history2[history2.length - 1];
+
     const html = `
-        <div class="log__num">${logElem.children.length / 12}</div>
-        <div class="log__value">${history[history.length - 1]}</div>
+        <div class="log__num">${index}</div>
+        <div class="log__value">${number}</div>
     `;
 
-    logElem.insertAdjacentHTML('beforeend', html);
+    if (isPlayer1Turn) {
+        logElem.insertAdjacentHTML('beforeend', html);
+    } else {
+        logElem2.insertAdjacentHTML('beforeend', html);
+    }
 }
 
 function insertResult(value) {
     const html = `
         <div class="log__result">${value}</div>
     `;
-    logElem.insertAdjacentHTML('beforeend', html);
+
+    if (isPlayer1Turn) {
+        logElem.insertAdjacentHTML('beforeend', html);
+    } else {
+        logElem2.insertAdjacentHTML('beforeend', html);
+    }
 }
 
 function winHandler() {
-    if (currentScore > highScore) {
-        localStorage.setItem('highScore', currentScore);
-    }
+    let player = 1;
+    if (!isPlayer1Turn) player = 2;
+    alert(`Победа! Игрок ${player} выиграл`);
 
-    alert(`Победа! Очков набрано: ${currentScore}`);
     location.reload();
 }
 
-function showScore() {
-    highScoreElem.textContent = highScore;
-    currentScoreElem.textContent = currentScore;
-}
-
-function updateScore() {
-    currentScore -= history.length * 10;
-
-    if (currentScore <= 10) currentScore = 10;
-    currentScoreElem.textContent = currentScore;
-}
-
-function solve(ms = 500) {
+function solve() {
     // Функция для удобства разработки, вызывать только когда ничего не отгадано
+    const delay = (DELAY_AFTER_INPUT + 300 + 10) * 2;
 
     let range = {
         from: 0,
@@ -178,7 +238,7 @@ function solve(ms = 500) {
       
         async *[Symbol.asyncIterator]() {
             for(let value = this.from; value <= this.to; value++) {
-                await new Promise(resolve => setTimeout(resolve, ms));
+                await new Promise(resolve => setTimeout(resolve, delay));
                 yield value;
             }
         }
@@ -189,6 +249,10 @@ function solve(ms = 500) {
             const str = randomDigitsArr[idx].join('');
             input.value = str;
             button.click();
+            setTimeout(() => {
+                input2.value = str.split('').reverse().join('');
+                button2.click();
+            }, delay / 2);
         }
     })();
 }
