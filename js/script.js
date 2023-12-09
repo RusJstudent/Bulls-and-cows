@@ -1,14 +1,12 @@
 'use strict';
 
-const DELAY_AFTER_INPUT = 1500; // Задержка перед тем, как окно переключится на другого игрока
+const DELAY_AFTER_INPUT = 0; // Задержка перед тем, как окно переключится на другого игрока
 
 const container = document.querySelector('.container');
 const input = document.querySelector('.game__input');
 const input2 = document.querySelectorAll('.game__input')[1];
 const button = document.querySelector('.game__button');
 const button2 = document.querySelectorAll('.game__button')[1];
-const logElem = document.querySelector('.log');
-const logElem2 = document.querySelectorAll('.log')[1];
 
 button.addEventListener('click', function(e) {
     guessHandler(input.value);
@@ -32,84 +30,62 @@ input2.addEventListener('keydown', function(e) {
     this.value = '';
 });
 
-const numOfDigits = askNumOfDigits();
-const randomDigitsArr = getRandomDigits(numOfDigits);
-const solvedDigits = Array(randomDigitsArr.length);
-const solvedDigits2 = Array(randomDigitsArr.length);
+const numsCount = 2;
+const digitsPerNum = 4; // askDigitsPerNum();
 
-let isPlayer1Turn = true;
+const usersCount = 2;
+const users = Array(usersCount);
+let activePlayer;
 
-const history = [];
-const history2 = [];
+initUsers();
+function initUsers() {
+    for (let i = 0; i < usersCount; i++) {
+        users[i] = new User({
+            id: i + 1,
+            numbers: 2,
+            digitsPerNum,
+        });
+    
+        console.log(`user${i + 1}`, users[i].randomNumbers);
+    }
 
-function askNumOfDigits() {
-    let numOfDigits;
+    activePlayer = users[0];
+}
+
+function askDigitsPerNum() {
+    let digitsPerNum;
 
     do {
-        numOfDigits = prompt('Введите количество цифр (от 2 до 9)', '');
+        digitsPerNum = prompt('Введите количество цифр (от 2 до 9)', '');
 
-        if (isNaN(numOfDigits) || numOfDigits === null) continue;
-        if (numOfDigits >= 2 && numOfDigits <= 9) break;
+        if (isNaN(digitsPerNum) || digitsPerNum === null) continue;
+        if (digitsPerNum >= 2 && digitsPerNum <= 9) break;
 
         alert('Число должно быть от 2 до 9');
     } while (true);
 
-    return +numOfDigits;
-}
-
-function getRandomDigits(num) {
-    const result = [];
-
-    for (let i = 0; i < 10; i++) {
-        const digits = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-        const randomDigits = [];
-    
-        for (let i = 0; i < num; i++) {
-            const randomDigitIdx = Math.floor(Math.random() * digits.length);
-            const randomNum = digits.splice(randomDigitIdx, 1)[0];
-            randomDigits.push(randomNum);
-        }
-
-        result.push(randomDigits);
-    }
-
-    return result;
+    return +digitsPerNum;
 }
 
 function guessHandler(value) {
     if (!validateGuess(value)) return;
 
-    if (isPlayer1Turn) {
-        history.push(value);
-    } else {
-        history2.push(value);
-    }
+    activePlayer.history.push(value);
     insertDefaultHTML();
 
     let gameIsCompleted = true;
 
-    for (let i = 0; i < randomDigitsArr.length; i++) {
-        if (isPlayer1Turn) {
-            if (solvedDigits[i] === 1) {
-                insertResult('Вы угадали');
-                solvedDigits[i]++;
-                continue;
-            } else if (solvedDigits[i] === 2) {
-                insertResult('');
-                continue;
-            }
-        } else {
-            if (solvedDigits2[i] === 1) {
-                insertResult('Вы угадали');
-                solvedDigits2[i]++;
-                continue;
-            } else if (solvedDigits2[i] === 2) {
-                insertResult('');
-                continue;
-            }
+    for (let i = 0; i < activePlayer.randomNumbers.length; i++) {
+        if (activePlayer.guessedNumbers[i] === 1) {
+            insertResult('Вы угадали');
+            activePlayer.guessedNumbers[i]++;
+            continue;
+        } else if (activePlayer.guessedNumbers[i] === 2) {
+            insertResult('');
+            continue;
         }
 
-        let initialStr = randomDigitsArr[i].join('');
+        let initialStr = activePlayer.randomNumbers[i].join('');
         let bullsNum = 0; // быки (полное совпадение)
         let cowsNum = 0; // коровы (цифра есть, но не на своем месте)
     
@@ -129,7 +105,7 @@ function guessHandler(value) {
             continue;
         }
 
-        isPlayer1Turn ? solvedDigits[i] = 1 : solvedDigits2[i] = 1;
+        activePlayer.guessedNumbers[i] = 1;
     }
 
     input.disabled = true;
@@ -140,7 +116,7 @@ function guessHandler(value) {
     }, DELAY_AFTER_INPUT + 300);
 
     setTimeout(() => {
-        isPlayer1Turn = !isPlayer1Turn;
+        changeTurn();
         container.classList.toggle('shift');
     }, DELAY_AFTER_INPUT);
 
@@ -149,15 +125,21 @@ function guessHandler(value) {
     });
 }
 
+function changeTurn() {
+    let currentPlayerIdx = users.indexOf(activePlayer);
+    (currentPlayerIdx === users.length - 1) ? currentPlayerIdx = 0 : currentPlayerIdx++;
+    activePlayer = users[currentPlayerIdx];
+}
+
 function validateGuess(value) {
     if (isNaN(+value)) {
         alert('Введенное значение должно быть числом');
         return;
     }
 
-    if (value.length !== numOfDigits) {
-        alert(`Необходимо ввести ${numOfDigits} цифр${numOfDigits >= 2 
-            && numOfDigits <= 4 ? 'ы' : ''}`);
+    if (value.length !== digitsPerNum) {
+        alert(`Необходимо ввести ${digitsPerNum} цифр${digitsPerNum >= 2 
+            && digitsPerNum <= 4 ? 'ы' : ''}`);
         return;
     }
 
@@ -174,38 +156,25 @@ function validateGuess(value) {
         return;
     }
 
-    if (isPlayer1Turn) {
-        if (history.includes(value)) {
-            alert(`Число ${value} уже введено ранее`);
-            return;
-        }
-    } else {
-        if (history2.includes(value)) {
-            alert(`Число ${value} уже введено ранее`);
-            return;
-        }
+    if (activePlayer.history.includes(value)) {
+        alert(`Число ${value} уже введено ранее`);
+        return;
     }
     
     return true;
 }
 
 function insertDefaultHTML() {
-    let index = logElem.children.length / 12;
-    if (!isPlayer1Turn) index = logElem2.children.length / 12;
+    let number = activePlayer.logElem.children.length / 4;
 
-    let number = history[history.length - 1];
-    if (!isPlayer1Turn) number = history2[history2.length - 1];
+    let value = activePlayer.history[activePlayer.history.length - 1];
 
     const html = `
-        <div class="log__num">${index}</div>
-        <div class="log__value">${number}</div>
+        <div class="log__num">${number}</div>
+        <div class="log__value">${value}</div>
     `;
 
-    if (isPlayer1Turn) {
-        logElem.insertAdjacentHTML('beforeend', html);
-    } else {
-        logElem2.insertAdjacentHTML('beforeend', html);
-    }
+    activePlayer.logElem.insertAdjacentHTML('beforeend', html);
 }
 
 function insertResult(value) {
@@ -213,46 +182,12 @@ function insertResult(value) {
         <div class="log__result">${value}</div>
     `;
 
-    if (isPlayer1Turn) {
-        logElem.insertAdjacentHTML('beforeend', html);
-    } else {
-        logElem2.insertAdjacentHTML('beforeend', html);
-    }
+
+    activePlayer.logElem.insertAdjacentHTML('beforeend', html);
 }
 
 function winHandler() {
-    let player = 1;
-    if (!isPlayer1Turn) player = 2;
-    alert(`Победа! Игрок ${player} выиграл`);
+    alert(`Победа! Игрок ${activePlayer.id} выиграл`);
 
     location.reload();
-}
-
-function solve() {
-    // Функция для удобства разработки, вызывать только когда ничего не отгадано
-    const delay = (DELAY_AFTER_INPUT + 300 + 10) * 2;
-
-    let range = {
-        from: 0,
-        to: randomDigitsArr.length - 1,
-      
-        async *[Symbol.asyncIterator]() {
-            for(let value = this.from; value <= this.to; value++) {
-                await new Promise(resolve => setTimeout(resolve, delay));
-                yield value;
-            }
-        }
-    };
-      
-    (async () => {
-        for await (let idx of range) {
-            const str = randomDigitsArr[idx].join('');
-            input.value = str;
-            button.click();
-            setTimeout(() => {
-                input2.value = str.split('').reverse().join('');
-                button2.click();
-            }, delay / 2);
-        }
-    })();
 }
