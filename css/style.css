@@ -1,3 +1,7 @@
+:root {
+    --grid-columns: 4;
+}
+
 body {
     margin: 0;
     background-color: #333;
@@ -11,15 +15,12 @@ body {
     align-items: center;
     overflow: hidden;
 }
-.container {
+.game {
     flex: 1 0 100%;
     text-align: center;
     transition: 0.3s;
 }
-.container.shift {
-    margin: 0px 0px 0px -100vw;
-}
-.game {
+.game__container {
     background-color: rgba(121, 149, 106, 0.5);
     padding: 30px;
     border-radius: 2px;
@@ -30,14 +31,6 @@ body {
     align-items: center;
     flex-direction: column;
 }
-
-.game_1 {
-    background-color: rgb(189, 45, 45);
-}
-.game_2 {
-    background-color: rgb(50, 50, 104);
-}
-
 .game__player {
     font-size: 24px;
     margin: 0px 0px 15px 0px;
@@ -55,25 +48,23 @@ body {
 }
 .game__button {}
 
-/* Log */
 .game__log {
     margin: 20px 0px 0px 0px;
-}
-.log {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(var(--grid-columns), 1fr);
     align-items: center;
     justify-items: center;
     gap: 12px;
-}
-.log > * {
     font-size: 20px;
 }
-@media (max-width: 1280px) {
-    .log > * {
-        font-size: 20px;
+
+@media (max-width: 767px) {
+    .game__container {
+        padding-left: 7px;
+        padding-right: 7px;
+    }
+    .game__log {
+        font-size: 16px;
+        gap: 7px;
     }
 }
-.log__num {}
-.log__value {}
-.log__result {}

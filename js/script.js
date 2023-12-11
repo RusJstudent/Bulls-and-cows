@@ -1,55 +1,38 @@
 'use strict';
 
-const DELAY_AFTER_INPUT = 0; // Задержка перед тем, как окно переключится на другого игрока
+const DELAY_AFTER_INPUT = 500; // Задержка перед тем, как окно переключится на другого игрока
+const USERS_COUNT = 4; // от 2 до 5 (всего 5 цветов)
+const NUMS_COUNT = 1;
 
-const container = document.querySelector('.container');
-const input = document.querySelector('.game__input');
-const input2 = document.querySelectorAll('.game__input')[1];
-const button = document.querySelector('.game__button');
-const button2 = document.querySelectorAll('.game__button')[1];
+document.documentElement.style.setProperty('--grid-columns', NUMS_COUNT + 2);
 
-button.addEventListener('click', function(e) {
-    guessHandler(input.value);
-    input.value = '';
-});
-input.addEventListener('keydown', function(e) {
-    if (e.code !== 'Enter') return;
-
-    guessHandler(this.value);
-    this.value = '';
-});
-
-button2.addEventListener('click', function(e) {
-    guessHandler(input2.value);
-    input2.value = '';
-});
-input2.addEventListener('keydown', function(e) {
-    if (e.code !== 'Enter') return;
-
-    guessHandler(this.value);
-    this.value = '';
-});
-
-const numsCount = 2;
 const digitsPerNum = 4; // askDigitsPerNum();
-
-const usersCount = 2;
-const users = Array(usersCount);
-let activePlayer;
-
+const users = Array(USERS_COUNT);
 initUsers();
+let activePlayer = users[0];
+const gameElem = User.anchorElem.firstElementChild;
+
 function initUsers() {
-    for (let i = 0; i < usersCount; i++) {
+    for (let i = 0; i < USERS_COUNT; i++) {
         users[i] = new User({
             id: i + 1,
-            numbers: 2,
+            numbers: NUMS_COUNT,
             digitsPerNum,
+        });
+
+        users[i].button.addEventListener('click', function(e) {
+            guessHandler(users[i].input.value);
+            users[i].input.value = '';
+        });
+        users[i].input.addEventListener('keydown', function(e) {
+            if (e.code !== 'Enter') return;
+        
+            guessHandler(this.value);
+            this.value = '';
         });
     
         console.log(`user${i + 1}`, users[i].randomNumbers);
     }
-
-    activePlayer = users[0];
 }
 
 function askDigitsPerNum() {
@@ -73,7 +56,7 @@ function guessHandler(value) {
     activePlayer.history.push(value);
     insertDefaultHTML();
 
-    let gameIsCompleted = true;
+    let allNumbersCorrect = true;
 
     for (let i = 0; i < activePlayer.randomNumbers.length; i++) {
         if (activePlayer.guessedNumbers[i] === 1) {
@@ -101,27 +84,22 @@ function guessHandler(value) {
         insertResult(`${bullsNum}:${cowsNum}`);
 
         if (initialStr !== value) {
-            gameIsCompleted = false;
+            allNumbersCorrect = false;
             continue;
         }
 
         activePlayer.guessedNumbers[i] = 1;
     }
 
-    input.disabled = true;
-    input2.disabled = true;
-    setTimeout(() => {
-        input.disabled = false;
-        input2.disabled = false;
-    }, DELAY_AFTER_INPUT + 300);
+    activePlayer.input.disabled = true;
+    gameElem.ontransitionend = e => {
+        activePlayer.input.disabled = false;
+    }
+
+    setTimeout(changeTurn, DELAY_AFTER_INPUT);
 
     setTimeout(() => {
-        changeTurn();
-        container.classList.toggle('shift');
-    }, DELAY_AFTER_INPUT);
-
-    setTimeout(() => {
-        if (gameIsCompleted) winHandler();
+        if (allNumbersCorrect) winHandler();
     });
 }
 
@@ -129,6 +107,8 @@ function changeTurn() {
     let currentPlayerIdx = users.indexOf(activePlayer);
     (currentPlayerIdx === users.length - 1) ? currentPlayerIdx = 0 : currentPlayerIdx++;
     activePlayer = users[currentPlayerIdx];
+
+    gameElem.style.marginLeft = `${-100 * currentPlayerIdx}vw`;
 }
 
 function validateGuess(value) {
@@ -165,10 +145,8 @@ function validateGuess(value) {
 }
 
 function insertDefaultHTML() {
-    let number = activePlayer.logElem.children.length / 4;
-
-    let value = activePlayer.history[activePlayer.history.length - 1];
-
+    const number = activePlayer.logElem.children.length / (2 + NUMS_COUNT);
+    const value = activePlayer.history[activePlayer.history.length - 1];
     const html = `
         <div class="log__num">${number}</div>
         <div class="log__value">${value}</div>
@@ -181,7 +159,6 @@ function insertResult(value) {
     const html = `
         <div class="log__result">${value}</div>
     `;
-
 
     activePlayer.logElem.insertAdjacentHTML('beforeend', html);
 }
