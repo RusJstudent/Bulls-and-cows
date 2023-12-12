@@ -4,13 +4,13 @@ const DELAY_AFTER_INPUT = 500; // Задержка перед тем, как о�
 const USERS_COUNT = 4; // от 2 до 5 (всего 5 цветов)
 const NUMS_COUNT = 1;
 
-document.documentElement.style.setProperty('--grid-columns', NUMS_COUNT + 2);
+document.documentElement.style.setProperty('--grid-columns', `${NUMS_COUNT + 2}`);
 
 const digitsPerNum = 4; // askDigitsPerNum();
 const users = Array(USERS_COUNT);
 initUsers();
 let activePlayer = users[0];
-const gameElem = User.anchorElem.firstElementChild;
+const gameElem = User.anchorElem.firstElementChild as HTMLElement;
 
 function initUsers() {
     for (let i = 0; i < USERS_COUNT; i++) {
@@ -20,11 +20,11 @@ function initUsers() {
             digitsPerNum,
         });
 
-        users[i].button.addEventListener('click', function(e) {
+        users[i].button.addEventListener('click', function(e: MouseEvent) {
             guessHandler(users[i].input.value);
             users[i].input.value = '';
         });
-        users[i].input.addEventListener('keydown', function(e) {
+        users[i].input.addEventListener('keydown', function(this: HTMLInputElement, e: KeyboardEvent) {
             if (e.code !== 'Enter') return;
         
             guessHandler(this.value);
@@ -36,13 +36,13 @@ function initUsers() {
 }
 
 function askDigitsPerNum() {
-    let digitsPerNum;
+    let digitsPerNum: string | null;
 
     do {
         digitsPerNum = prompt('Введите количество цифр (от 2 до 9)', '');
 
-        if (isNaN(digitsPerNum) || digitsPerNum === null) continue;
-        if (digitsPerNum >= 2 && digitsPerNum <= 9) break;
+        if (digitsPerNum === null || isNaN(+digitsPerNum)) continue;
+        if (+digitsPerNum >= 2 && +digitsPerNum <= 9) break;
 
         alert('Число должно быть от 2 до 9');
     } while (true);
@@ -50,7 +50,7 @@ function askDigitsPerNum() {
     return +digitsPerNum;
 }
 
-function guessHandler(value) {
+function guessHandler(value: string) {
     if (!validateGuess(value)) return;
 
     activePlayer.history.push(value);
@@ -111,7 +111,7 @@ function changeTurn() {
     gameElem.style.marginLeft = `${-100 * currentPlayerIdx}vw`;
 }
 
-function validateGuess(value) {
+function validateGuess(value: string) {
     if (isNaN(+value)) {
         alert('Введенное значение должно быть числом');
         return;
@@ -155,7 +155,7 @@ function insertDefaultHTML() {
     activePlayer.logElem.insertAdjacentHTML('beforeend', html);
 }
 
-function insertResult(value) {
+function insertResult(value: string) {
     const html = `
         <div class="log__result">${value}</div>
     `;
